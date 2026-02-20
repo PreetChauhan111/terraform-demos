@@ -2,25 +2,34 @@
 # VPC Peering
 ##############
 
-module "vpc-peering" {
-  source  = "cloudposse/vpc-peering/aws"
-  version = "1.0.1"
-  name = "${local.public_vpc_name}-to-${local.private_vpc_name}"
-  requestor_vpc_id = module.public_vpc.vpc_id
-  acceptor_vpc_id = module.private_vpc.vpc_id
+resource "aws_vpc_peering_connection" "fs-peering" {
+  vpc_id      = module.vpc["public_vpc"].vpc_id
+  peer_vpc_id = module.vpc["private_vpc"].vpc_id
   auto_accept = true
+  requester {
+    allow_remote_vpc_dns_resolution = true
+  }
+  accepter {
+    allow_remote_vpc_dns_resolution = true
+  }
 }
-
-# Adding the route from private to public
-resource "aws_route" "private-to-public" {
-  route_table_id            = module.public_vpc.public_route_table_ids[0]
-  destination_cidr_block    = module.private_vpc.vpc_cidr_block
-  vpc_peering_connection_id = module.vpc-peering.id
+resource "aws_route" "public_vpc_pub_1" {
+  route_table_id            = module.vpc["public_vpc"].public_route_table_ids[0]
+  destination_cidr_block    = module.vpc["private_vpc"].vpc_cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.fs-peering.id
 }
-
-# Adding the route from public to private
-resource "aws_route" "public-to-private" {
-  route_table_id            = module.private_vpc.intra_route_table_ids[0]
-  destination_cidr_block    = module.public_vpc.vpc_cidr_block
-  vpc_peering_connection_id = module.vpc-peering.id
+resource "aws_route" "public_vpc_pub_2" {
+  route_table_id            = module.vpc["public_vpc"].public_route_table_ids[1]
+  destination_cidr_block    = module.vpc["private_vpc"].vpc_cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.fs-peering.id
+}
+resource "aws_route" "private_vpc_priv_1" {
+  route_table_id            = module.vpc["private_vpc"].private_route_table_ids[0]
+  destination_cidr_block    = module.vpc["public_vpc"].vpc_cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.fs-peering.id
+}
+resource "aws_route" "private_vpc_priv_2" {
+  route_table_id            = module.vpc["private_vpc"].private_route_table_ids[1]
+  destination_cidr_block    = module.vpc["public_vpc"].vpc_cidr_block
+  vpc_peering_connection_id = aws_vpc_peering_connection.fs-peering.id
 }

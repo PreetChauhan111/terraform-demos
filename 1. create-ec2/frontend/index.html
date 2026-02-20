@@ -1,0 +1,25 @@
+DOCTYPE html>
+<html>
+  <head>
+    <title>Cloud Architecture Demo</title>
+  </head>
+  <body>
+    <h1>Frontend → Backend → RDS</h1>
+
+    <button onclick="getData()">Fetch Data</button>
+
+    <pre id="output"></pre>
+
+    <script>
+      async function getData() {
+        const res = await fetch("/api");
+        const data = await res.json();
+        document.getElementById("output").innerText = JSON.stringify(
+          data,
+          null,
+          2,
+        );
+      }
+    </script>
+  </body>
+</html>
